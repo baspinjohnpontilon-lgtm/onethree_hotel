@@ -1,0 +1,9 @@
+<?php
+require_once __DIR__.'/../includes/functions.php'; require_admin(); $adminPage=true; $pageTitle='Reports';
+$revenue=(float)$pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM reservations WHERE status IN ('confirmed','completed')")->fetchColumn();
+$byStatus=$pdo->query("SELECT status,COUNT(*) AS total FROM reservations GROUP BY status ORDER BY total DESC")->fetchAll();
+$byRoom=$pdo->query("SELECT rooms.name,COUNT(reservations.id) AS bookings,COALESCE(SUM(CASE WHEN reservations.status IN ('confirmed','completed') THEN reservations.total_amount ELSE 0 END),0) AS revenue FROM rooms LEFT JOIN reservations ON reservations.room_id=rooms.id GROUP BY rooms.id ORDER BY bookings DESC")->fetchAll();
+include __DIR__.'/../includes/header.php';
+?>
+<section class="admin-wrap"><div class="container"><div class="eyebrow mb-3">Administration</div><h1 class="section-title mb-4">Reports.</h1><div class="stat-card mb-4"><div class="muted small">Confirmed/completed reservation value (not accounting revenue)</div><div class="stat-number">₱<?= number_format($revenue,2) ?></div></div><h2 class="room-name mb-3">Reservations by status</h2><div class="table-responsive mb-5"><table class="table table-dark"><thead><tr><th>Status</th><th>Count</th></tr></thead><tbody><?php foreach($byStatus as $r): ?><tr><td><?= e($r['status']) ?></td><td><?= (int)$r['total'] ?></td></tr><?php endforeach; ?></tbody></table></div><h2 class="room-name mb-3">Room summary</h2><div class="table-responsive"><table class="table table-dark"><thead><tr><th>Room</th><th>Reservation requests</th><th>Confirmed/completed value</th></tr></thead><tbody><?php foreach($byRoom as $r): ?><tr><td><?= e($r['name']) ?></td><td><?= (int)$r['bookings'] ?></td><td>₱<?= number_format($r['revenue'],2) ?></td></tr><?php endforeach; ?></tbody></table></div><a href="dashboard.php">← Back to dashboard</a></div></section>
+<?php include __DIR__.'/../includes/footer.php'; ?>
